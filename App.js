@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Riddimrise",
+    "slug": "riddimrise",
+    "scheme": "riddimrise",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["ios", "android"],
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#111"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.khipsy.riddimrise",
+      "versionCode": 1,
+      "permissions": []
+    }
+  }
+}
