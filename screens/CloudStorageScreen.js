@@ -43,9 +43,17 @@ export default function CloudStorageScreen() {
         copyToCacheDirectory: true,
       });
 
-      if (result.type === 'success' || !result.canceled) {
-        const file = result.assets ? result.assets[0] : result;
+      // Check if the user canceled the picker
+      if (result.canceled) {
+        return;
+      }
+
+      // Validate that we have assets
+      if (result.assets && result.assets.length > 0) {
+        const file = result.assets[0];
         await handleUploadVideo(file);
+      } else {
+        Alert.alert('Error', 'No file selected');
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to pick video: ' + error.message);
