@@ -8,38 +8,17 @@
       "distribution": "internal",
       "android": {
         "gradleCommand": ":app:assembleDebug"
-      },
-      "env": {
-        "OPENAI_API_KEY": process.env.OPENAI_API_KEY,
-        "SPOTIFY_CLIENT_ID": process.env.SPOTIFY_CLIENT_ID,
-        "SPOTIFY_CLIENT_SECRET": process.env.SPOTIFY_CLIENT_SECRET,
-        "GOOGLE_API_KEY": process.env.GOOGLE_API_KEY,
-        "YOUTUBE_API_KEY": process.env.YOUTUBE_API_KEY
       }
     },
     "preview": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      },
-      "env": {
-        "OPENAI_API_KEY": process.env.OPENAI_API_KEY,
-        "SPOTIFY_CLIENT_ID": process.env.SPOTIFY_CLIENT_ID,
-        "SPOTIFY_CLIENT_SECRET": process.env.SPOTIFY_CLIENT_SECRET,
-        "GOOGLE_API_KEY": process.env.GOOGLE_API_KEY,
-        "YOUTUBE_API_KEY": process.env.YOUTUBE_API_KEY
       }
     },
     "production": {
       "android": {
         "buildType": "app-bundle"
-      },
-      "env": {
-        "OPENAI_API_KEY": process.env.OPENAI_API_KEY,
-        "SPOTIFY_CLIENT_ID": process.env.SPOTIFY_CLIENT_ID,
-        "SPOTIFY_CLIENT_SECRET": process.env.SPOTIFY_CLIENT_SECRET,
-        "GOOGLE_API_KEY": process.env.GOOGLE_API_KEY,
-        "YOUTUBE_API_KEY": process.env.YOUTUBE_API_KEY
       }
     }
   },

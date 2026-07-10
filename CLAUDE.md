@@ -102,12 +102,10 @@ Verify these before assuming anything runs; fix opportunistically when touching 
 - **No lockfile / `node_modules`** — run `npm install` (or `npx expo install`) first.
   Dependency versions in `package.json` are pinned to Expo SDK 51 but unverified against
   a real install; `npx expo install` will reconcile them.
-- **`eas.json` is invalid JSON** — the `env` blocks use bare `process.env.OPENAI_API_KEY`
-  (unquoted JS), which is not valid JSON. EAS expects quoted string values or the keys
-  defined via EAS environment variables/secrets. (Local dev works via `.env` + dotenv;
-  this only bites EAS builds.)
-- **`config.js` is missing `trainerUrl`**, but `lib/youtubenew.js` imports it — add the
-  export (and its source in `app.config.js`/`extra`) before using `trainAlgo`.
+- **EAS secrets** — `eas.json` no longer inlines keys; for cloud builds set
+  `OPENAI_API_KEY` / `SPOTIFY_*` / `GOOGLE_API_KEY` / `YOUTUBE_API_KEY` / `TRAINER_URL`
+  as EAS environment variables/secrets (dashboard or `eas env:create`). They flow into
+  `process.env` → `app.config.js` `extra`. Local dev uses `.env` + dotenv.
 - **Duplicate/placeholder screens** — `AIScreen.js` and `YouTubeScreen.js` both define a
   component literally named `SpotifyScreen`; these need real implementations. They are
   not currently referenced by `App.js`.

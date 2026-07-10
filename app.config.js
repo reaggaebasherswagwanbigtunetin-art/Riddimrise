@@ -11,5 +11,6 @@ export default () => ({
     spotifyClientSecret: process.env.SPOTIFY_CLIENT_SECRET,
     googleApiKey: process.env.GOOGLE_API_KEY,
     youtubeApiKey: process.env.YOUTUBE_API_KEY,
+    trainerUrl: process.env.TRAINER_URL,
   },
 });
