@@ -6,7 +6,7 @@ import appJson from "./app.json";
 export default () => ({
   ...appJson.expo,
   extra: {
-    openAiApiKey: process.env.OPENAI_API_KEY,
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
     spotifyClientId: process.env.SPOTIFY_CLIENT_ID,
     spotifyClientSecret: process.env.SPOTIFY_CLIENT_SECRET,
     googleApiKey: process.env.GOOGLE_API_KEY,

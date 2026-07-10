@@ -18,8 +18,9 @@ scaffolding to be built out.
 - **Expo** managed workflow (`app.json` / `eas.json`), targeting iOS and Android.
 - **React Native** with functional components and hooks.
 - **EAS Build** for `development`, `preview`, and `production` builds.
-- External services: OpenAI, Spotify Web API, Google/YouTube Data API, plus a custom
-  "trainer" backend endpoint (`trainerUrl`) for playlist generation.
+- External services: Anthropic (Claude, via the Messages API), Spotify Web API,
+  Google/YouTube Data API, plus a custom "trainer" backend endpoint (`trainerUrl`) for
+  playlist generation.
 
 `package.json` targets the **Expo SDK 51** stack (React Native 0.74). Run
 `npm install` (or `npx expo install` to reconcile versions) before first run; there is
@@ -42,10 +43,12 @@ screens/                One React component per app tab/screen
 
 - `config.js` — Single source of truth for secrets. Reads from
   `Constants.manifest?.extra` / `Constants.expoConfig?.extra` and re-exports
-  `openAiApiKey`, `spotifyClientId`, `spotifyClientSecret`, `googleApiKey`,
+  `anthropicApiKey`, `spotifyClientId`, `spotifyClientSecret`, `googleApiKey`,
   `youtubeApiKey`. **All other `lib/` modules import their keys from here** — never
   read `process.env` or hardcode keys in service modules.
-- `api.js` — `fetchOpenAiCompletion(prompt)` calls the OpenAI completions API.
+- `api.js` — `fetchClaudeCompletion(prompt, {maxTokens, model})` calls Claude via the
+  Anthropic Messages API (default model `claude-opus-4-8`) and returns the reply text.
+  Needs an Anthropic API key from console.anthropic.com — separate from Claude Max.
 - `spotify.js` — `fetchSpotifyPlaylists()` (stub; OAuth Client Credentials flow not
   implemented, returns `[]`).
 - `youtube.js` — `fetchYouTubeVideos(query)` calls the YouTube Data API search endpoint.
@@ -103,14 +106,15 @@ Verify these before assuming anything runs; fix opportunistically when touching 
   Dependency versions in `package.json` are pinned to Expo SDK 51 but unverified against
   a real install; `npx expo install` will reconcile them.
 - **EAS secrets** — `eas.json` no longer inlines keys; for cloud builds set
-  `OPENAI_API_KEY` / `SPOTIFY_*` / `GOOGLE_API_KEY` / `YOUTUBE_API_KEY` / `TRAINER_URL`
+  `ANTHROPIC_API_KEY` / `SPOTIFY_*` / `GOOGLE_API_KEY` / `YOUTUBE_API_KEY` / `TRAINER_URL`
   as EAS environment variables/secrets (dashboard or `eas env:create`). They flow into
   `process.env` → `app.config.js` `extra`. Local dev uses `.env` + dotenv.
 - **Duplicate/placeholder screens** — `AIScreen.js` and `YouTubeScreen.js` both define a
   component literally named `SpotifyScreen`; these need real implementations. They are
   not currently referenced by `App.js`.
 - **`.env` is now gitignored but was previously committed** with a real OpenAI key —
-  rotate that key; git history still contains it.
+  the app no longer uses OpenAI, so delete/revoke that key in the OpenAI dashboard
+  (git history still contains it). Claude uses `ANTHROPIC_API_KEY` instead.
 - **`YOUTUBE_API_KEY` must be set** (in `.env` locally) for the YouTube tab to load;
   without it, `fetchLatestMusic` throws "YouTube API key not set", surfaced in the player.
 
