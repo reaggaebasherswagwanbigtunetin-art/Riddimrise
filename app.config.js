@@ -1,5 +1,6 @@
-// Loads .env for local `expo start`; on EAS builds the same vars are injected
-// via eas.json. Layers `extra` (read by lib/config.js) on top of app.json.
+// Loads .env for local `expo start`; on EAS cloud builds the same vars come from
+// EAS environment variables/secrets (dashboard or `eas env:create`). Layers
+// `extra` (read by lib/config.js) on top of app.json.
 import "dotenv/config";
 import appJson from "./app.json";
 
