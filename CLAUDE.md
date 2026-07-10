@@ -8,10 +8,10 @@ Riddimrise is an early-stage **Expo / React Native** mobile app (iOS + Android) 
 discovering and playing music across YouTube and Spotify, with an AI-assisted tab.
 The visual identity is a dark, Rasta-colored theme (red / gold / green).
 
-The codebase is a **work in progress**: several files are placeholders, stubs, or
-incomplete, and the project is not yet runnable as-is (see "Current state & known
-gaps" below). Treat most existing files as scaffolding to be built out rather than
-finished, working code.
+The codebase is a **work in progress**. The YouTube tab is functional and the app is
+launchable once dependencies are installed, but the Spotify/AI tabs are still
+placeholders (see "Current state & known gaps"). Treat the placeholder screens as
+scaffolding to be built out.
 
 ## Tech stack
 
@@ -21,17 +21,19 @@ finished, working code.
 - External services: OpenAI, Spotify Web API, Google/YouTube Data API, plus a custom
   "trainer" backend endpoint (`trainerUrl`) for playlist generation.
 
-There is **no build tooling checked in yet** — no `package.json`, lockfile, or
-`node_modules`. Dependencies referenced in code (e.g. `expo-constants`,
-`react-native-youtube-iframe`) must be installed once `package.json` exists.
+`package.json` targets the **Expo SDK 51** stack (React Native 0.74). Run
+`npm install` (or `npx expo install` to reconcile versions) before first run; there is
+no lockfile committed yet.
 
 ## Repository structure
 
 ```
-App.js                  Intended app entry / root component (currently incorrect — see gaps)
-app.json                Expo config: name, slug, scheme "riddimrise", android package com.khipsy.riddimrise
+App.js                  Root component: mounts YouTubeScreennew + the layover Modal
+app.config.js           Dynamic Expo config — spreads app.json and injects `extra` (API keys) from env
+app.json                Static Expo base config: name, slug, scheme "riddimrise", android package com.khipsy.riddimrise
+babel.config.js         babel-preset-expo
 eas.json                EAS Build profiles + env var mapping (currently invalid JSON — see gaps)
-.env                    Local secrets (should not be committed with real values)
+.env                    Local secrets, gitignored (loaded by app.config.js via dotenv)
 lib/                    Non-UI logic: config + one module per external service
 screens/                One React component per app tab/screen
 ```
@@ -49,27 +51,41 @@ screens/                One React component per app tab/screen
 - `youtube.js` — `fetchYouTubeVideos(query)` calls the YouTube Data API search endpoint.
 - `youtubenew.js` — Newer YouTube module (intended replacement for `youtube.js`):
   `youtubeSearch(q, max)` returns normalized `{id, title, thumb}[]`;
-  `youtubeSearchLatest`/`fetchLatestMusic(genre)` return newest-first, Music-category
-  results filtered by `publishedAfter` and merged/deduped across the phrases in
-  `MUSIC_GENRES` (dancehall / reggae / African); `trainAlgo(weights)` POSTs to the
-  `trainerUrl` backend to build a playlist.
+  `youtubeSearchLatest`/`fetchLatestMusic(key, {exclude})` return newest-first,
+  Music-category results filtered by `publishedAfter`, then merged/deduped across a
+  region's or genre's search phrases (and any excluded ids). `MUSIC_REGIONS`
+  (Jamaica, Nigeria, Ghana, Zimbabwe, South Africa, Tanzania, Kenya, Global Mix) each
+  carry `{key, label, flag, styles, queries}`; `MUSIC_GENRES` is the older
+  genre-keyed list. `trainAlgo(weights)` POSTs to the `trainerUrl` backend.
 - `theme.js` — Exports `theme` (dark mode, Rasta palette). Import colors from here
   rather than hardcoding hex values in screens.
 
-### `screens/` — UI tabs
+### `screens/` — UI
 
-- `AIScreen.js`, `SpotifyScreen.js`, `YouTubeScreen.js` — currently all placeholder
-  screens rendering "Coming Soon" text.
-- `YouTubeScreennew.js` — The real YouTube tab: a continuous player that fetches the
-  latest dancehall / reggae / African music via `lib/youtubenew.js` (`fetchLatestMusic`),
-  auto-advances through the queue on track end, and offers a genre selector
-  (`MUSIC_GENRES`). Uses `react-native-youtube-iframe` for playback.
+- `GenrePicker.js` — The **layover**: a slide-up picker (rendered in a `Modal` from
+  `App.js`) of country cards from `MUSIC_REGIONS`. `onSelect(region)` chooses which
+  country's latest music plays; shown on launch and re-openable via the player's
+  "Change" button.
+- `YouTubeScreennew.js` — The real YouTube tab: a continuous player driven by a
+  `region` prop. Fetches that country's latest music via `fetchLatestMusic`,
+  **auto-advances without ever repeating a track** (tracks played ids, pages in more
+  when the queue empties), and shows an "Up next" queue. `react-native-youtube-iframe`
+  for playback.
+- `AIScreen.js`, `SpotifyScreen.js`, `YouTubeScreen.js` — older placeholder screens
+  ("Coming Soon"); not wired into `App.js`.
+
+### App flow
+
+`App.js` holds the selected `region` and whether the layover is visible. On launch the
+`GenrePicker` Modal is up; picking a country sets `region` and reveals
+`YouTubeScreennew`. The player's "Change" button reopens the layover.
 
 ## Conventions
 
-- **Secrets flow:** app config (`eas.json` `env` → Expo `extra`) → `lib/config.js` →
-  service modules. Add a new key by extending both `eas.json` env blocks and
-  `config.js`, then importing the export where needed.
+- **Secrets flow:** env var (`.env` locally via dotenv, or `eas.json` `env` on EAS) →
+  `app.config.js` `extra` → `lib/config.js` → service modules. Add a new key by
+  extending `app.config.js` `extra`, `config.js`, the `eas.json` env blocks, and (for
+  local dev) `.env`, then importing the `config.js` export where needed.
 - **Service modules** live in `lib/`, are plain async functions returning parsed JSON
   or normalized objects, throw on missing keys / failed responses, and contain no JSX.
 - **Screens** are default-exported functional components with a co-located
@@ -83,28 +99,27 @@ screens/                One React component per app tab/screen
 
 Verify these before assuming anything runs; fix opportunistically when touching a file:
 
-- **No `package.json`** — the project cannot install deps, run, or build until one is
-  created with Expo/React Native and the imported libraries.
-- **`App.js` is wrong** — it contains a copy of the `app.json` Expo config instead of a
-  React root component. A real entry point (registering screens, e.g. via a navigator)
-  needs to be written.
+- **No lockfile / `node_modules`** — run `npm install` (or `npx expo install`) first.
+  Dependency versions in `package.json` are pinned to Expo SDK 51 but unverified against
+  a real install; `npx expo install` will reconcile them.
 - **`eas.json` is invalid JSON** — the `env` blocks use bare `process.env.OPENAI_API_KEY`
-  (unquoted JS), which is not valid JSON. EAS expects either quoted string values or the
-  keys defined via EAS environment variables/secrets.
+  (unquoted JS), which is not valid JSON. EAS expects quoted string values or the keys
+  defined via EAS environment variables/secrets. (Local dev works via `.env` + dotenv;
+  this only bites EAS builds.)
 - **`config.js` is missing `trainerUrl`**, but `lib/youtubenew.js` imports it — add the
-  export (and its source in `eas.json`/`extra`) before using `trainAlgo`.
+  export (and its source in `app.config.js`/`extra`) before using `trainAlgo`.
 - **Duplicate/placeholder screens** — `AIScreen.js` and `YouTubeScreen.js` both define a
-  component literally named `SpotifyScreen`; these need real implementations and correct
-  names/exports.
-- **`.env` contains a real-looking OpenAI key** committed to the repo. Do not reuse or
-  echo it; it should be rotated and removed from version control, with `.env` gitignored.
+  component literally named `SpotifyScreen`; these need real implementations. They are
+  not currently referenced by `App.js`.
+- **`.env` is now gitignored but was previously committed** with a real OpenAI key —
+  rotate that key; git history still contains it.
+- **`YOUTUBE_API_KEY` must be set** (in `.env` locally) for the YouTube tab to load;
+  without it, `fetchLatestMusic` throws "YouTube API key not set", surfaced in the player.
 
 ## Development workflow
 
-Standard Expo commands once `package.json` and dependencies exist:
-
 ```bash
-npm install                 # install dependencies (after package.json is created)
+npm install                 # or: npx expo install (reconciles SDK 51 versions)
 npx expo start              # start the Metro dev server / Expo Go
 npx expo start --android    # open on Android emulator/device
 npx expo start --ios        # open on iOS simulator/device

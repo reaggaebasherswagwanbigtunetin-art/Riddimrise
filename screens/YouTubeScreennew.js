@@ -10,31 +10,34 @@ import {
 } from "react-native";
 import YoutubePlayer from "react-native-youtube-iframe";
 
-import { fetchLatestMusic, MUSIC_GENRES } from "../lib/youtubenew";
+import { fetchLatestMusic } from "../lib/youtubenew";
 import { theme } from "../lib/theme";
 
-export default function YouTubeScreennew() {
-  const [genre, setGenre] = useState("all");
+// `region` is a MUSIC_REGIONS entry chosen in the layover; `onChangeRegion`
+// pops that layover back up so the listener can switch countries.
+export default function YouTubeScreennew({ region, onChangeRegion }) {
   const [tracks, setTracks] = useState([]);
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Guards against a slow response for an old genre overwriting a newer one.
+  // Guards against a slow response for an old region overwriting a newer one.
   const requestId = useRef(0);
   // Every video id that has already played (or been queued), so nothing repeats
   // across the initial queue and any pages fetched later.
   const playedIds = useRef(new Set());
   const loadingMore = useRef(false);
 
-  const load = useCallback(async (selectedGenre) => {
+  const regionKey = region?.key;
+
+  const load = useCallback(async (key) => {
     const id = ++requestId.current;
     setLoading(true);
     setError(null);
     playedIds.current = new Set();
     try {
-      const results = await fetchLatestMusic(selectedGenre, { max: 20 });
+      const results = await fetchLatestMusic(key, { max: 20 });
       if (id !== requestId.current) return;
       results.forEach((t) => playedIds.current.add(t.id));
       setTracks(results);
@@ -53,8 +56,8 @@ export default function YouTubeScreennew() {
   }, []);
 
   useEffect(() => {
-    load(genre);
-  }, [genre, load]);
+    if (regionKey) load(regionKey);
+  }, [regionKey, load]);
 
   // Fetch another page of the latest tracks, excluding everything already
   // seen, and append the new ones to the queue. Returns how many were added.
@@ -63,7 +66,7 @@ export default function YouTubeScreennew() {
     loadingMore.current = true;
     const id = requestId.current;
     try {
-      const more = await fetchLatestMusic(genre, {
+      const more = await fetchLatestMusic(regionKey, {
         max: 20,
         exclude: playedIds.current,
       });
@@ -77,7 +80,7 @@ export default function YouTubeScreennew() {
     } finally {
       loadingMore.current = false;
     }
-  }, [genre]);
+  }, [regionKey]);
 
   // When a track finishes, move to the next unplayed one. If the queue is
   // exhausted, page in more latest tracks rather than replaying old ones.
@@ -135,18 +138,16 @@ export default function YouTubeScreennew() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.genreBar}>
-        {MUSIC_GENRES.map((g) => (
-          <TouchableOpacity
-            key={g.key}
-            style={[styles.chip, genre === g.key && styles.chipActive]}
-            onPress={() => setGenre(g.key)}
-          >
-            <Text style={[styles.chipText, genre === g.key && styles.chipTextActive]}>
-              {g.label}
-            </Text>
+      <View style={styles.regionBar}>
+        <Text style={styles.regionLabel} numberOfLines={1}>
+          {region ? `${region.flag}  ${region.label}` : "Pick a country"}
+          {region?.styles ? <Text style={styles.regionStyles}>{`   ${region.styles}`}</Text> : null}
+        </Text>
+        {!!onChangeRegion && (
+          <TouchableOpacity style={styles.changeBtn} onPress={onChangeRegion}>
+            <Text style={styles.changeText}>Change</Text>
           </TouchableOpacity>
-        ))}
+        )}
       </View>
 
       <View style={styles.player}>
@@ -201,26 +202,23 @@ export default function YouTubeScreennew() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.colors.background },
-  genreBar: {
+  regionBar: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    padding: 8,
-    gap: 8,
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  chip: {
+  regionLabel: { flex: 1, color: theme.colors.text, fontSize: 18, fontWeight: "700" },
+  regionStyles: { color: theme.colors.secondary, fontSize: 12, fontWeight: "500" },
+  changeBtn: {
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.card,
-  },
-  chipActive: {
     backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
+    marginLeft: 8,
   },
-  chipText: { color: theme.colors.text, fontSize: 14 },
-  chipTextActive: { color: theme.colors.text, fontWeight: "700" },
+  changeText: { color: theme.colors.text, fontSize: 14, fontWeight: "700" },
   player: { paddingHorizontal: 8 },
   playerPlaceholder: {
     height: 220,
