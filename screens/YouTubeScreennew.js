@@ -23,14 +23,20 @@ export default function YouTubeScreennew() {
 
   // Guards against a slow response for an old genre overwriting a newer one.
   const requestId = useRef(0);
+  // Every video id that has already played (or been queued), so nothing repeats
+  // across the initial queue and any pages fetched later.
+  const playedIds = useRef(new Set());
+  const loadingMore = useRef(false);
 
   const load = useCallback(async (selectedGenre) => {
     const id = ++requestId.current;
     setLoading(true);
     setError(null);
+    playedIds.current = new Set();
     try {
       const results = await fetchLatestMusic(selectedGenre, { max: 20 });
       if (id !== requestId.current) return;
+      results.forEach((t) => playedIds.current.add(t.id));
       setTracks(results);
       setIndex(0);
       setPlaying(results.length > 0);
@@ -50,16 +56,49 @@ export default function YouTubeScreennew() {
     load(genre);
   }, [genre, load]);
 
-  // Auto-advance to the next track when the current one finishes, looping
-  // back to the top so playback never stops.
+  // Fetch another page of the latest tracks, excluding everything already
+  // seen, and append the new ones to the queue. Returns how many were added.
+  const loadMore = useCallback(async () => {
+    if (loadingMore.current) return 0;
+    loadingMore.current = true;
+    const id = requestId.current;
+    try {
+      const more = await fetchLatestMusic(genre, {
+        max: 20,
+        exclude: playedIds.current,
+      });
+      if (id !== requestId.current) return 0;
+      const fresh = more.filter((t) => !playedIds.current.has(t.id));
+      fresh.forEach((t) => playedIds.current.add(t.id));
+      if (fresh.length) setTracks((prev) => [...prev, ...fresh]);
+      return fresh.length;
+    } catch {
+      return 0;
+    } finally {
+      loadingMore.current = false;
+    }
+  }, [genre]);
+
+  // When a track finishes, move to the next unplayed one. If the queue is
+  // exhausted, page in more latest tracks rather than replaying old ones.
   const onStateChange = useCallback(
-    (state) => {
-      if (state === "ended") {
-        setIndex((prev) => (tracks.length ? (prev + 1) % tracks.length : 0));
+    async (state) => {
+      if (state !== "ended") return;
+      if (index + 1 < tracks.length) {
+        setIndex(index + 1);
         setPlaying(true);
+        return;
+      }
+      const added = await loadMore();
+      if (added > 0) {
+        setIndex((prev) => prev + 1);
+        setPlaying(true);
+      } else {
+        setPlaying(false);
+        setError("You're all caught up on the latest — check back soon.");
       }
     },
-    [tracks.length]
+    [index, tracks.length, loadMore]
   );
 
   const current = tracks[index];
