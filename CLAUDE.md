@@ -47,9 +47,12 @@ screens/                One React component per app tab/screen
 - `spotify.js` — `fetchSpotifyPlaylists()` (stub; OAuth Client Credentials flow not
   implemented, returns `[]`).
 - `youtube.js` — `fetchYouTubeVideos(query)` calls the YouTube Data API search endpoint.
-- `youtubenew.js` — Newer YouTube module: `youtubeSearch(q, max)` returns a normalized
-  `{id, title, thumb}[]`, and `trainAlgo(weights)` POSTs to the `trainerUrl` backend to
-  build a playlist. This is the intended replacement for `youtube.js`.
+- `youtubenew.js` — Newer YouTube module (intended replacement for `youtube.js`):
+  `youtubeSearch(q, max)` returns normalized `{id, title, thumb}[]`;
+  `youtubeSearchLatest`/`fetchLatestMusic(genre)` return newest-first, Music-category
+  results filtered by `publishedAfter` and merged/deduped across the phrases in
+  `MUSIC_GENRES` (dancehall / reggae / African); `trainAlgo(weights)` POSTs to the
+  `trainerUrl` backend to build a playlist.
 - `theme.js` — Exports `theme` (dark mode, Rasta palette). Import colors from here
   rather than hardcoding hex values in screens.
 
@@ -57,8 +60,10 @@ screens/                One React component per app tab/screen
 
 - `AIScreen.js`, `SpotifyScreen.js`, `YouTubeScreen.js` — currently all placeholder
   screens rendering "Coming Soon" text.
-- `YouTubeScreennew.js` — Incomplete build-out of the real YouTube search/player screen
-  using `react-native-youtube-iframe` and `lib/youtubenew.js`.
+- `YouTubeScreennew.js` — The real YouTube tab: a continuous player that fetches the
+  latest dancehall / reggae / African music via `lib/youtubenew.js` (`fetchLatestMusic`),
+  auto-advances through the queue on track end, and offers a genre selector
+  (`MUSIC_GENRES`). Uses `react-native-youtube-iframe` for playback.
 
 ## Conventions
 
